@@ -1,0 +1,16 @@
+{
+    "RootPath": "FILE_DIRECTORY_PATH",
+    "ConcFilecount":100,
+    "Services" : {
+        "AccessToken": "HOST_TOKEN",
+        "UserServiceHost": "SYS_USERSERVICE_HOST",
+        "UserServicePort": "SYS_USERSERVICE_PORT",
+        "UserServiceVersion": "SYS_USERSERVICE_VERSION"
+    },
+     "Mongo" : {
+        "Mhost": "192.168.1.1",
+        "Musername": "user1",
+        "Mpassword": "pas1",
+        "Mdb": "db"
+    }
+}

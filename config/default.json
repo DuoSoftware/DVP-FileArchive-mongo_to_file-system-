@@ -1,0 +1,20 @@
+{
+
+    "RootPath":"C:\\Users\\pamidu\\Desktop\\gotool",
+    "ConcFilecount":100,
+    "Services" : {
+      "AccessToken":"token",
+      "UserServiceHost": "fileservice.app1.veery.cloud",
+      "UserServicePort": "8831",
+      "UserServiceVersion": "1.0.0.0"
+    },
+    "Mongo" : {
+        "Mhost": "192.168.1.2",
+        "Musername": "user1",
+        "Mpassword": "pas1",
+        "Mdb": "db"
+    }
+
+
+
+}
