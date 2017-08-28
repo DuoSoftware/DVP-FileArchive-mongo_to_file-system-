@@ -1,6 +1,6 @@
 package main
 import (
-	"bytes"
+    "bytes"
     "encoding/json"
     "fmt"
     "io/ioutil"
@@ -13,7 +13,7 @@ import (
     "strings"
     "sync"
     "path/filepath"
-	 )
+     )
 type FilesDetails struct {
     UniqueId        string
     FileStructure   string
@@ -50,6 +50,22 @@ type Respond struct {
     IsSuccess     bool
     Result        []FilesDetails
 }
+type categoryresult struct {
+    id          int
+    Owner       string
+    Category    string
+    Visible     bool
+    Encripted   bool
+    createdAt   string
+    updatedAt   string
+}
+type Respondcatlist struct {
+    Exception     string
+    CustomMessage string
+    IsSuccess     bool
+    Result        []categoryresult
+}
+
 type Item struct {
     CompanyId  int
     SpaceLimit Limit
@@ -77,7 +93,7 @@ type Config struct {
 }
 func main() {
     t := time.Now()
-   // fmt.Println(t.String())
+    fmt.Println(t.String())
     starttime:=t.Format("2006-01-02 15:04:05")
     conf := loadConfig()
     //fmt.Println(conf.Mongo.Mhost,conf.Mongo.Musername,conf.Mongo.Mpassword)
@@ -100,10 +116,16 @@ func main() {
     db := mgo.Database{}
     db.Session = session
     db.Name = conf.Mongo.Mdb
-
-        //"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdWtpdGhhIiwianRpIjoiYWEzOGRmZWYtNDFhOC00MWUyLTgwMzktOTJjZTY0YjM4ZDFmIiwic3ViIjoiNTZhOWU3NTlmYjA3MTkwN2EwMDAwMDAxMjVkOWU4MGI1YzdjNGY5ODQ2NmY5MjExNzk2ZWJmNDMiLCJleHAiOjE5MDIzODExMTgsInRlbmFudCI6LTEsImNvbXBhbnkiOi0xLCJzY29wZSI6W3sicmVzb3VyY2UiOiJhbGwiLCJhY3Rpb25zIjoiYWxsIn1dLCJpYXQiOjE0NzAzODExMTh9.Gmlu00Uj66Fzts-w6qEwNUz46XYGzE8wHUhAJOFtiRo"
     authToken := fmt.Sprintf("Bearer %s", accessToken)
-
+    
+    fmt.Println("Enter Company ID ")
+    var cid string
+    fmt.Scanln(&cid)
+    
+    fmt.Println("Enter Tenant ID")
+    var tid string
+    fmt.Scanln(&tid)
+    
     fmt.Println("press 1 for \"all files category wise\"")
     fmt.Println("press 2 for \"all files ,all category,date range wise\"")
     fmt.Println("press 3 for \"all files category and date range wise \"")
@@ -113,21 +135,25 @@ func main() {
 
     i, err := strconv.Atoi(selection)
     checkErr(err)
-    
-   
+
+    fmt.Println("Do You Want to Delete files From MongoDB (Y/N)")
+    var deleteconfirm string
+    fmt.Scanln(&deleteconfirm)
+    confirm:=false
+    if("Y"==deleteconfirm){
+        confirm=true
+    }
     if(1==i){//all files category wise 
-        CategoryArray:=createCategoryArray()
-        //fmt.Println(CategoryArray)
+        CategoryArray:=createCategoryArray(host,authToken,tid,cid)
         url:=setCountUrl(false,host,"","")
-       // fmt.Println("count: ",url)
         data := make(map[string]interface{})
         data["categoryList"] = CategoryArray
         bytearray, err := json.Marshal(data)
-        //atlist=["abc","bbc"]
         var CatjsonStr = []byte(bytearray)
         req, err := http.NewRequest("POST", url, bytes.NewBuffer(CatjsonStr))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
 
         client := &http.Client{}
         resp, err := client.Do(req)
@@ -139,32 +165,46 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Reord Count :" ,rep.Result)
-
-        //fmt.Println(rep.Result / concFilecount)
-       
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
-
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            //fmt.Println("records: ",url)
-            fileWrite(rootPath,getRecodes(url,host,authToken,CatjsonStr),db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),confirm,db)
         }
-
-
     }else if (2==i){//all files in all category daterange wise 
+        
+
         startd, endd:=getDateRange()
-    	//fmt.Println(startd,endd)
         url:=setCountUrl(true,host,startd,endd)
-        //fmt.Println("count: ",url)
-        var jsonStr = []byte(`{"categoryList":["TICKET_ATTACHMENTS","CONVERSATION","REPORTS","AGENT_GREETINGS","IVRCLIPS","PROFILE_PICTURES","NOTICE_ATTACHMENTS"]}`)
-        //r jsonStr = []byte(`{"categoryList":["PROFILE_PICTURES","TICKET_ATTACHMENTS","CONVERSATION","REPORTS","AGENT_GREETINGS"]}`)
-        //var jsonStr = []byte(`{"categoryList":["PROFILE_PICTURES","TICKET_ATTACHMENTS","CONVERSATION","REPORTS","AGENT_GREETINGS"]}`)
-        //req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))//data := make(map[string]interface{})
-        //data["categoryList"] = CategoryArray
-        //bytearray, err := json.Marshal(data)
-        //var CatjsonStr = []byte(jsonStr)
-        req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+
+
+        catlisturl := fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileCategories",host)
+        catlistreq, catlisterr := http.NewRequest("GET", catlisturl, nil)
+        catlistreq.Header.Set("Authorization", authToken)
+        catlistreq.Header.Set("Content-Type", "application/json")
+        catlistreq.Header.Set("companyinfo", tid+":"+cid)
+
+        catlistclient := &http.Client{}
+        catlistresp, catlisterr := catlistclient.Do(catlistreq)
+        if catlisterr != nil {
+            panic(catlisterr)
+        }
+        defer catlistresp.Body.Close()
+        catlistbody, _ := ioutil.ReadAll(catlistresp.Body)
+        catlistrep := Respondcatlist{}
+        err = json.Unmarshal(catlistbody, &catlistrep)
+        var catlist []string
+        index:=0
+        for _, cat := range catlistrep.Result {
+           fmt.Println("press ", index+1, " for " ,cat.Category)
+           catlist = append(catlist, cat.Category)
+           index++
+        }
+        data := make(map[string]interface{})
+        data["categoryList"] = catlist
+        bytearray, err := json.Marshal(data)
+        req, err := http.NewRequest("POST", url, bytes.NewBuffer(bytearray))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
 
         client := &http.Client{}
         resp, err := client.Do(req)
@@ -176,21 +216,14 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Reord Count :" ,rep.Result)
-
-
-        //fmt.Println(rep.Result / concFilecount)
-       
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
-
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            //fmt.Println("records: ",url)
-            fileWrite(rootPath,getRecodes(url,host,authToken,jsonStr),db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),confirm,db)
         }
     }else if (3==i){//all file category and daterange wise 
         startd, endd:=getDateRange()
-        CategoryArray:=createCategoryArray()
+        CategoryArray:=createCategoryArray(host,authToken,tid,cid)
         url:=setCountUrl(true,host,startd,endd)
-        //fmt.Println("count: ",url)
         data := make(map[string]interface{})
         data["categoryList"] = CategoryArray
         bytearray, err := json.Marshal(data)
@@ -198,6 +231,7 @@ func main() {
         req, err := http.NewRequest("POST", url, bytes.NewBuffer(CatjsonStr))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
 
         client := &http.Client{}
         resp, err := client.Do(req)
@@ -208,67 +242,45 @@ func main() {
         body, _ := ioutil.ReadAll(resp.Body)
         rep := count{}
         err = json.Unmarshal(body, &rep)
-        fmt.Println("Reord Count :" ,rep.Result)
-
-
-        //fmt.Println(rep.Result / concFilecount)
-       
+        fmt.Println("Reord Count :" ,rep.Result)  
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
-
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            //fmt.Println("records: ",url)
-            fileWrite(rootPath,getRecodes(url,host,authToken,CatjsonStr),db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),confirm,db)
         }
     }else{
-    	fmt.Println("sinhala berida oi ")
+        fmt.Println("sinhala berida oi ")
     }
-     t = time.Now()
-    //fmt.Println(t.String())
+    t = time.Now()
+    fmt.Println(t.String())
     endtime:=t.Format("2006-01-02 15:04:05")
     fmt.Println("All Done ..................")
     fmt.Println("start time :",starttime)
     fmt.Println("End time :",endtime)
-
 }
 func GetDirPath() string {
     envPath := os.Getenv("GO_CONFIG_DIR")
     if envPath == "" {
-        envPath = "C:\\Users\\pamidu\\Desktop\\gotool"
+        envPath = "C:\\Users\\pamidu\\Desktop\\go"
     }
-    //fmt.Println(envPath)
-
     envPath = filepath.Join(envPath,"config")
-
     return envPath
 }
 func loadConfig() Config{
-
     dirPath := GetDirPath()
     confPath := filepath.Join(dirPath, "default.json")
-    //fmt.Println("GetDefaultConfig config path: ", confPath)
     content, operr := ioutil.ReadFile(confPath)
     if operr != nil {
         fmt.Println(operr)
     }
-
     defConfiguration := Config{}
     json.Unmarshal(content, &defConfiguration)
-
-    ////////////////////////load envs/////////////////////////////////////
     envConfPath := filepath.Join(dirPath, "custom-environment-variables.json")
-
     envContent, operr := ioutil.ReadFile(envConfPath)
-
-
     if operr != nil {
         fmt.Println(operr)
     }else {
-
         defEnvConfiguration := Config{}
         unErr := json.Unmarshal(envContent, &defEnvConfiguration)
-
-        //fmt.Println(defConfiguration)
-
         if unErr != nil {
 
             if defEnvConfiguration.Services.AccessToken != "" {
@@ -288,8 +300,6 @@ func loadConfig() Config{
 
         }
     }
-
-
     return defConfiguration
 }
 func checkErr(err error) {
@@ -297,33 +307,39 @@ func checkErr(err error) {
         fmt.Println(err)
     }
 }
-func createCategoryArray() []string{
-     var catforPost []string
-        //fmt.Println("selection 1")
-        fmt.Println("press 1 for \"TICKET_ATTACHMENTS\" \npress 2 for \"CONVERSATION\" \npress 3 for \"REPORTS\" \npress 4 for \"AGENT_GREETINGS\" \npress 5 for \"IVRCLIPS\" \npress 6 for \"PROFILE_PICTURES\" \npress 7 for \"NOTICE_ATTACHMENTS\" ")
+func createCategoryArray(host string,authToken string,tid string ,cid string) []string{
+        url := fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileCategories",host)
+        req, err := http.NewRequest("GET", url, nil)
+        req.Header.Set("Authorization", authToken)
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
+
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+            panic(err)
+        }
+        defer resp.Body.Close()
+        body, _ := ioutil.ReadAll(resp.Body)
+        rep := Respondcatlist{}
+        err = json.Unmarshal(body, &rep)
+        var catlist []string
+        index:=0
+        for _, cat := range rep.Result {
+           fmt.Println("press ", index+1, " for " ,cat.Category)
+           catlist = append(catlist, cat.Category)
+           index++
+        }
+
+        var catforPost []string
         fmt.Println("enter category list")
         fmt.Println("eg: 1,2,5")
         var categorylist string
         fmt.Scanln(&categorylist)
         s := strings.Split(categorylist, ",")
-        //fmt.Println(s)
         for _, cat := range s {
-            catint,_:=strconv.Atoi(cat)
-            if(1==catint){
-                catforPost = append(catforPost, "TICKET_ATTACHMENTS")
-            }else if(2==catint){
-                catforPost = append(catforPost, "CONVERSATION")
-            }else if(3==catint){
-                catforPost = append(catforPost, "REPORTS")
-            }else if(4==catint){
-                catforPost = append(catforPost, "AGENT_GREETINGS")
-            }else if(5==catint){
-                catforPost = append(catforPost, "IVRCLIPS")
-            }else if(6==catint){
-                catforPost = append(catforPost, "PROFILE_PICTURES")
-            }else if(7==catint){
-                catforPost = append(catforPost, "NOTICE_ATTACHMENTS")
-            }
+           catint,_:=strconv.Atoi(cat)
+           catforPost = append(catforPost, catlist[catint-1])
         }
         return catforPost
 
@@ -347,8 +363,7 @@ func setCountUrl(daterange bool ,host string,stardate string,enddate string) str
         url = fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileInfo/ByCategoryList/count",host)
 
     }
-    return url
-    
+    return url 
 }
 func setRecodsUrl(i int ,concFilecount int,daterange bool ,host string ,stardate string,enddate string) string {
     url:=""
@@ -366,11 +381,11 @@ func ParseDate4(date string) string {
     path := year + "/" + month + "/" + date
     return path
 }
-func getRecodes(url string,host string,authToken string,CatjsonStr []byte  )Respond{
-        //var jsonStr = []byte(`{"categoryList":["PROFILE_PICTURES","TICKET_ATTACHMENTS","CONVERSATION","REPORTS","AGENT_GREETINGS"]}`)
+func getRecodes(url string,host string,authToken string,tid string,cid string,CatjsonStr []byte  )Respond{
         req, err := http.NewRequest("POST", url, bytes.NewBuffer(CatjsonStr))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
 
         client := &http.Client{}
         resp, err := client.Do(req)
@@ -379,29 +394,21 @@ func getRecodes(url string,host string,authToken string,CatjsonStr []byte  )Resp
         body, _ := ioutil.ReadAll(resp.Body)
         rep := Respond{}
         err = json.Unmarshal(body, &rep)
-        //fmt.Println("-----------------------------------------")
-        //fmt.Println(rep.Result)
-        //fmt.Println("-----------------------------------------")
         return rep
 }
-func fileWrite(rootPath string,rep Respond,db mgo.Database){
+func fileWrite(rootPath string,rep Respond,confirm bool ,db mgo.Database){
     var wg sync.WaitGroup
-
-        wg.Add(len(rep.Result))
-
+      wg.Add(len(rep.Result))
         for _, recods := range rep.Result {
-
              go func(recods FilesDetails) {
-                 defer wg.Done()
-
+                defer wg.Done()
                 datepath := ParseDate4(recods.CreatedAt)
                 fmt.Println(recods.FileStructure, recods.ObjClass, recods.Filename, recods.CreatedAt)
                 // var dataset bson.M
                 file, err := db.GridFS("fs").Open(recods.UniqueId)
                 checkErr(err)
-                path := (rootPath+ "/"+strconv.Itoa(recods.CompanyId) + "/" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
+                path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
                 fmt.Println(path)
-                //fmt.Println(ParseDate4(recods.CreatedAtre))
                 if _, err := os.Stat(path); os.IsNotExist(err) {
                     os.MkdirAll(path, os.ModePerm)
                 }
@@ -414,8 +421,12 @@ func fileWrite(rootPath string,rep Respond,db mgo.Database){
                     checkErr(err)
                 }
                 if _, err := os.Stat(path + "/" + recods.Filename); !os.IsNotExist(err) {
-                   removeFile(db,recods.UniqueId)
-                   //fileWrite(rootPath,getRecodes(url,host,authToken,CatjsonStr),db)
+                   if(confirm){
+                       status:= removeFile(db,recods.UniqueId)
+                       if(status){
+                        updatePath()
+                       }
+                   }
                 }
                 //execResponses <- true
             }(recods)
@@ -425,19 +436,17 @@ func fileWrite(rootPath string,rep Respond,db mgo.Database){
         wg.Wait()
 
 }
-func removeFile(db mgo.Database,UniqueId string){
-    //err := db.GridFS("fs").Remove(UniqueId)
-    //checkErr(err)
-    //if(err == nil){
-    if(true){
-        updatePath()
+func removeFile(db mgo.Database,UniqueId string)bool{
+    err := db.GridFS("fs").Remove(UniqueId)
+    if(err == nil){
+        fmt.Println("File Delete method :",UniqueId)
+        return true
+    }else{
+        checkErr(err)
+        return false
     }
-    fmt.Println("File Delete method :",UniqueId)
-
-
+    
 }
 func updatePath(){
     fmt.Println("File path update method :")
 }
-
-
