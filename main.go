@@ -1,6 +1,6 @@
 package main
 import (
-    "bytes"
+	"bytes"
     "encoding/json"
     "fmt"
     "io/ioutil"
@@ -13,7 +13,7 @@ import (
     "strings"
     "sync"
     "path/filepath"
-     )
+	 )
 type FilesDetails struct {
     UniqueId        string
     FileStructure   string
@@ -248,7 +248,7 @@ func main() {
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),confirm,db)
         }
     }else{
-        fmt.Println("sinhala berida oi ")
+    	fmt.Println("sinhala berida oi ")
     }
     t = time.Now()
     fmt.Println(t.String())
