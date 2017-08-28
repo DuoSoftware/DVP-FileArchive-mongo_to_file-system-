@@ -8,9 +8,9 @@
         "UserServiceVersion": "SYS_USERSERVICE_VERSION"
     },
      "Mongo" : {
-        "Mhost": "192.168.1.1",
-        "Musername": "user1",
-        "Mpassword": "pas1",
-        "Mdb": "db"
+        "Mhost": "104.236.231.11",
+        "Musername": "duo",
+        "Mpassword": "DuoS123",
+        "Mdb": "dvpdb"
     }
 }
