@@ -91,6 +91,17 @@ type Config struct {
              Mpassword string
          }
 }
+type pathupdatedata struct{
+    URL string
+    Source string
+}
+var (
+    host        string
+    authToken string
+    tid string
+    cid string
+)
+
 func main() {
     t := time.Now()
     fmt.Println(t.String())
@@ -167,7 +178,7 @@ func main() {
         fmt.Println("Reord Count :" ,rep.Result)
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),confirm,db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else if (2==i){//all files in all category daterange wise 
         
@@ -198,8 +209,21 @@ func main() {
            catlist = append(catlist, cat.Category)
            index++
         }
+
+        var catforPost []string
+        fmt.Println("enter category list")
+        fmt.Println("eg: 1,2,5")
+        var categorylist string
+        fmt.Scanln(&categorylist)
+        s := strings.Split(categorylist, ",")
+        for _, cat := range s {
+           catint,_:=strconv.Atoi(cat)
+           catforPost = append(catforPost, catlist[catint-1])
+        }
+
+
         data := make(map[string]interface{})
-        data["categoryList"] = catlist
+        data["categoryList"] = catforPost
         bytearray, err := json.Marshal(data)
         req, err := http.NewRequest("POST", url, bytes.NewBuffer(bytearray))
         req.Header.Set("Authorization", authToken)
@@ -218,7 +242,7 @@ func main() {
         fmt.Println("Reord Count :" ,rep.Result)
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),confirm,db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),authToken,tid,cid,confirm,db)
         }
     }else if (3==i){//all file category and daterange wise 
         startd, endd:=getDateRange()
@@ -245,7 +269,7 @@ func main() {
         fmt.Println("Reord Count :" ,rep.Result)  
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
-            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),confirm,db)
+            fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else{
     	fmt.Println("sinhala berida oi ")
@@ -396,19 +420,19 @@ func getRecodes(url string,host string,authToken string,tid string,cid string,Ca
         err = json.Unmarshal(body, &rep)
         return rep
 }
-func fileWrite(rootPath string,rep Respond,confirm bool ,db mgo.Database){
+func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid string,confirm bool ,db mgo.Database){
     var wg sync.WaitGroup
       wg.Add(len(rep.Result))
         for _, recods := range rep.Result {
              go func(recods FilesDetails) {
                 defer wg.Done()
                 datepath := ParseDate4(recods.CreatedAt)
-                fmt.Println(recods.FileStructure, recods.ObjClass, recods.Filename, recods.CreatedAt)
+                //fmt.Println(recods.FileStructure, recods.ObjClass, recods.Filename, recods.CreatedAt)
                 // var dataset bson.M
                 file, err := db.GridFS("fs").Open(recods.UniqueId)
                 checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
-                fmt.Println(path)
+                //fmt.Println(path)
                 if _, err := os.Stat(path); os.IsNotExist(err) {
                     os.MkdirAll(path, os.ModePerm)
                 }
@@ -424,7 +448,7 @@ func fileWrite(rootPath string,rep Respond,confirm bool ,db mgo.Database){
                    if(confirm){
                        status:= removeFile(db,recods.UniqueId)
                        if(status){
-                        updatePath()
+                        updatePath(path,recods.UniqueId,authToken,tid,cid)
                        }
                    }
                 }
@@ -447,6 +471,27 @@ func removeFile(db mgo.Database,UniqueId string)bool{
     }
     
 }
-func updatePath(){
-    fmt.Println("File path update method :")
+func updatePath(path string,uniqueid string,authToken string,tid string,cid string){
+    url := fmt.Sprintf("http://fileservice.app1.veery.cloud/DVP/API/1.0.0.0/FileService/FileInfo/%s/path",uniqueid)
+    
+    mapD := map[string]string{"URL": path, "Source": "LOCAL"}
+    mapB, _ := json.Marshal(mapD)
+   
+        req, err := http.NewRequest("PUT", url, bytes.NewBuffer(mapB))
+        req.Header.Set("Authorization", authToken)
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("companyinfo", tid+":"+cid)
+
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+            panic(err)
+        }
+        defer resp.Body.Close()
+        body, _ := ioutil.ReadAll(resp.Body)
+        rep := Respond{}
+        err = json.Unmarshal(body, &rep)
+        fmt.Println(rep.IsSuccess)
+        //rep := count{}
+        //err = json.Unmarshal(body, &rep)
 }
