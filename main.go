@@ -350,7 +350,7 @@ func createCategoryArray(host string,authToken string,tid string ,cid string) []
 
 }
 func getDateRange() (string,string){
-    fmt.Println("Enter Stard Date")
+    fmt.Println("Enter Start Date")
     fmt.Println("eg: 2017-05-01")
     var startdate string
     fmt.Scanln(&startdate)
