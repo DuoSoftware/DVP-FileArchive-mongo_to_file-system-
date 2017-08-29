@@ -260,7 +260,7 @@ func main() {
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else{
-    	fmt.Println("sinhala berida oi ")
+    	fmt.Println("Sorry Wrong selection try again ... ")
     }
     t = time.Now()
     fmt.Println(t.String())
@@ -270,9 +270,10 @@ func main() {
     fmt.Println("End time :",endtime)
 }
 func GetDirPath() string {
+    dir, _ := os.Getwd()
     envPath := os.Getenv("GO_CONFIG_DIR")
     if envPath == "" {
-        envPath = "/root/work/src/DVP-FileArchive-mongo_to_file-system-"
+        envPath = dir
     }
     envPath = filepath.Join(envPath,"config")
     return envPath
@@ -415,11 +416,11 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
              go func(recods FilesDetails) {
                 defer wg.Done()
                 datepath := ParseDate4(recods.CreatedAt)
-                //fmt.Println(recods.FileStructure, recods.ObjClass, recods.Filename, recods.CreatedAt)
+                //fmt.Println(recods)
                 // var dataset bson.M
                 file, _ := db.GridFS("fs").Open(recods.UniqueId)
                 //checkErr(err)
-                path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
+                path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
                 //fmt.Println(path)
                 if(file != nil){
                     if _, err := os.Stat(path); os.IsNotExist(err) {
