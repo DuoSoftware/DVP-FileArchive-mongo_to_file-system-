@@ -95,13 +95,8 @@ type pathupdatedata struct{
     URL string
     Source string
 }
-var (
-    host        string
-    authToken string
-    tid string
-    cid string
-)
 
+var hostgloble =""
 func main() {
     t := time.Now()
     fmt.Println(t.String())
@@ -111,6 +106,7 @@ func main() {
     rootPath := conf.RootPath
     accessToken := conf.Services.AccessToken
     host:=conf.Services.UserServiceHost
+    hostgloble=conf.Services.UserServiceHost
     concFilecount:=conf.ConcFilecount
     //mongo Connection
     info := &mgo.DialInfo{
@@ -181,12 +177,8 @@ func main() {
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else if (2==i){//all files in all category daterange wise 
-        
-
         startd, endd:=getDateRange()
         url:=setCountUrl(true,host,startd,endd)
-
-
         catlisturl := fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileCategories",host)
         catlistreq, catlisterr := http.NewRequest("GET", catlisturl, nil)
         catlistreq.Header.Set("Authorization", authToken)
@@ -464,7 +456,7 @@ func removeFile(db mgo.Database,UniqueId string)bool{
     
 }
 func updatePath(path string,uniqueid string,authToken string,tid string,cid string){
-    url := fmt.Sprintf("http://fileservice.app1.veery.cloud/DVP/API/1.0.0.0/FileService/FileInfo/%s/path",uniqueid)
+    url := fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileInfo/%s/path",hostgloble,uniqueid)
     
     mapD := map[string]string{"URL": path, "Source": "LOCAL"}
     mapB, _ := json.Marshal(mapD)
