@@ -417,8 +417,8 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 datepath := ParseDate4(recods.CreatedAt)
                 //fmt.Println(recods.FileStructure, recods.ObjClass, recods.Filename, recods.CreatedAt)
                 // var dataset bson.M
-                file, err := db.GridFS("fs").Open(recods.UniqueId)
-                checkErr(err)
+                file, _ := db.GridFS("fs").Open(recods.UniqueId)
+                //checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
                 //fmt.Println(path)
                 if(file != nil){
@@ -429,7 +429,7 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 
                 if (file != nil) {
                     out, _ := os.Create(path + "/" + recods.Filename)
-                    _, err = io.Copy(out, file)
+                    _, err := io.Copy(out, file)
                     checkErr(err)
                     err = file.Close()
                     out.Close()
