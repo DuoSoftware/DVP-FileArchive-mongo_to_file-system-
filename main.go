@@ -284,7 +284,7 @@ func main() {
 func GetDirPath() string {
     envPath := os.Getenv("GO_CONFIG_DIR")
     if envPath == "" {
-        envPath = "C:\\Users\\pamidu\\Desktop\\go"
+        envPath = "/root/work/src/DVP-FileArchive-mongo_to_file-system-"
     }
     envPath = filepath.Join(envPath,"config")
     return envPath
@@ -476,7 +476,6 @@ func updatePath(path string,uniqueid string,authToken string,tid string,cid stri
     
     mapD := map[string]string{"URL": path, "Source": "LOCAL"}
     mapB, _ := json.Marshal(mapD)
-   
         req, err := http.NewRequest("PUT", url, bytes.NewBuffer(mapB))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
@@ -492,6 +491,5 @@ func updatePath(path string,uniqueid string,authToken string,tid string,cid stri
         rep := Respond{}
         err = json.Unmarshal(body, &rep)
         fmt.Println(rep.IsSuccess)
-        //rep := count{}
-        //err = json.Unmarshal(body, &rep)
+
 }
