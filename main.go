@@ -172,7 +172,7 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Reord Count :" ,rep.Result)
-        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
+        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
@@ -220,7 +220,7 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Reord Count :" ,rep.Result)
-        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
+        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),authToken,tid,cid,confirm,db)
         }
@@ -247,7 +247,7 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Reord Count :" ,rep.Result)  
-        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
+        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
