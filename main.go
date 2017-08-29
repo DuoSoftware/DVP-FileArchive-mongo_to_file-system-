@@ -137,9 +137,9 @@ func main() {
     var tid string
     fmt.Scanln(&tid)
     
-    fmt.Println("press 1 for \"all files category wise\"")
-    fmt.Println("press 2 for \"all files ,all category,date range wise\"")
-    fmt.Println("press 3 for \"all files category and date range wise \"")
+    fmt.Println("press 1 for \"Archive files category wise\"")
+    fmt.Println("press 2 for \"Archive files date range wise\"")
+    fmt.Println("press 3 for \"Archive files category and date range wise\"")
     fmt.Print("enter your selection : ")
     var selection string
     fmt.Scanln(&selection)
@@ -151,7 +151,7 @@ func main() {
     var deleteconfirm string
     fmt.Scanln(&deleteconfirm)
     confirm:=false
-    if("Y"==deleteconfirm){
+    if(("Y"==deleteconfirm)||("y"==deleteconfirm)){
         confirm=true
     }
     if(1==i){//all files category wise 
@@ -205,25 +205,13 @@ func main() {
         var catlist []string
         index:=0
         for _, cat := range catlistrep.Result {
-           fmt.Println("press ", index+1, " for " ,cat.Category)
+           //fmt.Println("press ", index+1, " for " ,cat.Category)
            catlist = append(catlist, cat.Category)
            index++
         }
 
-        var catforPost []string
-        fmt.Println("enter category list")
-        fmt.Println("eg: 1,2,5")
-        var categorylist string
-        fmt.Scanln(&categorylist)
-        s := strings.Split(categorylist, ",")
-        for _, cat := range s {
-           catint,_:=strconv.Atoi(cat)
-           catforPost = append(catforPost, catlist[catint-1])
-        }
-
-
         data := make(map[string]interface{})
-        data["categoryList"] = catforPost
+        data["categoryList"] = catlist
         bytearray, err := json.Marshal(data)
         req, err := http.NewRequest("POST", url, bytes.NewBuffer(bytearray))
         req.Header.Set("Authorization", authToken)
@@ -433,9 +421,12 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" + datepath + "/")
                 //fmt.Println(path)
-                if _, err := os.Stat(path); os.IsNotExist(err) {
-                    os.MkdirAll(path, os.ModePerm)
+                if(file != nil){
+                    if _, err := os.Stat(path); os.IsNotExist(err) {
+                        os.MkdirAll(path, os.ModePerm)
+                    }
                 }
+                
                 if (file != nil) {
                     out, _ := os.Create(path + "/" + recods.Filename)
                     _, err = io.Copy(out, file)
@@ -476,6 +467,7 @@ func updatePath(path string,uniqueid string,authToken string,tid string,cid stri
     
     mapD := map[string]string{"URL": path, "Source": "LOCAL"}
     mapB, _ := json.Marshal(mapD)
+
         req, err := http.NewRequest("PUT", url, bytes.NewBuffer(mapB))
         req.Header.Set("Authorization", authToken)
         req.Header.Set("Content-Type", "application/json")
