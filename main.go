@@ -99,7 +99,7 @@ type pathupdatedata struct{
 var hostgloble =""
 func main() {
     t := time.Now()
-    fmt.Println(t.String())
+    //fmt.Println(t.String())
     starttime:=t.Format("2006-01-02 15:04:05")
     conf := loadConfig()
     //fmt.Println(conf.Mongo.Mhost,conf.Mongo.Musername,conf.Mongo.Mpassword)
@@ -255,7 +255,7 @@ func main() {
     	fmt.Println("Sorry Wrong selection try again ... ")
     }
     t = time.Now()
-    fmt.Println(t.String())
+    //fmt.Println(t.String())
     endtime:=t.Format("2006-01-02 15:04:05")
     fmt.Println("All Done ..................")
     fmt.Println("start time :",starttime)
