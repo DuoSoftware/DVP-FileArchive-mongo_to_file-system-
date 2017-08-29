@@ -97,6 +97,7 @@ type pathupdatedata struct{
 }
 
 var hostgloble =""
+var migratecount=0
 func main() {
     t := time.Now()
     //fmt.Println(t.String())
@@ -171,14 +172,13 @@ func main() {
         body, _ := ioutil.ReadAll(resp.Body)
         rep := count{}
         err = json.Unmarshal(body, &rep)
-        fmt.Println("Reord Count :" ,rep.Result)
-        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
+        fmt.Println("Record Count :" ,rep.Result)
+        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else if (2==i){//all files in all category daterange wise 
         startd, endd:=getDateRange()
-        url:=setCountUrl(true,host,startd,endd)
         catlisturl := fmt.Sprintf("http://%s/DVP/API/1.0.0.0/FileService/FileCategories",host)
         catlistreq, catlisterr := http.NewRequest("GET", catlisturl, nil)
         catlistreq.Header.Set("Authorization", authToken)
@@ -201,7 +201,7 @@ func main() {
            catlist = append(catlist, cat.Category)
            index++
         }
-
+        url:=setCountUrl(true,host,startd,endd)
         data := make(map[string]interface{})
         data["categoryList"] = catlist
         bytearray, err := json.Marshal(data)
@@ -219,7 +219,7 @@ func main() {
         body, _ := ioutil.ReadAll(resp.Body)
         rep := count{}
         err = json.Unmarshal(body, &rep)
-        fmt.Println("Reord Count :" ,rep.Result)
+        fmt.Println("Record Count :" ,rep.Result)
         for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),authToken,tid,cid,confirm,db)
@@ -246,7 +246,7 @@ func main() {
         body, _ := ioutil.ReadAll(resp.Body)
         rep := count{}
         err = json.Unmarshal(body, &rep)
-        fmt.Println("Reord Count :" ,rep.Result)  
+        fmt.Println("Record Count :" ,rep.Result)  
         for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
@@ -255,9 +255,9 @@ func main() {
     	fmt.Println("Sorry Wrong selection try again ... ")
     }
     t = time.Now()
-   // fmt.Println(t.String())
     endtime:=t.Format("2006-01-02 15:04:05")
     fmt.Println("All Done ..................")
+    fmt.Println("migrate file count : ",migratecount)
     fmt.Println("start time :",starttime)
     fmt.Println("End time :",endtime)
 }
@@ -423,10 +423,13 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 if (file != nil) {
                     out, _ := os.Create(path + "/" + recods.Filename)
                     _, err := io.Copy(out, file)
-                    checkErr(err)
-                    err = file.Close()
+                    _ = file.Close()
                     out.Close()
-                    checkErr(err)
+                    if(err==nil){
+                            migratecount++   
+                    }
+                    
+                    //checkErr(err)
                 }
                 if _, err := os.Stat(path + "/" + recods.Filename); !os.IsNotExist(err) {
                    if(confirm){
