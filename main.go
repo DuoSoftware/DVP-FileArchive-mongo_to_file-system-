@@ -419,7 +419,8 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 file, _ := db.GridFS("fs").Open(recods.UniqueId)
                 //checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
-                //fmt.Println(path)
+                updatepath:=("/usr/local/src/fileservice/upload"+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
+                fmt.Println(updatepath)
                 if(file != nil){
                     if _, err := os.Stat(path); os.IsNotExist(err) {
                         os.MkdirAll(path, os.ModePerm)
@@ -441,7 +442,7 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                    if(confirm){
                        status:= removeFile(db,recods.UniqueId)
                        if(status){
-                        updatePath(path,recods.UniqueId,authToken,tid,cid)
+                        updatePath(updatepath,recods.UniqueId,authToken,tid,cid)
                        }
                    }
                 }
