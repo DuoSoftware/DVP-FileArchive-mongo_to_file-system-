@@ -220,7 +220,7 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Record Count :" ,rep.Result)
-        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
+        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
             url:=setRecodsUrl(i,concFilecount,false,host,"","")
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,bytearray),authToken,tid,cid,confirm,db)
         }
@@ -247,8 +247,8 @@ func main() {
         rep := count{}
         err = json.Unmarshal(body, &rep)
         fmt.Println("Record Count :" ,rep.Result)  
-        for i := 1; i < ((rep.Result / concFilecount) + 1); i++ {
-            url:=setRecodsUrl(i,concFilecount,false,host,"","")
+        for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
+            url:=setRecodsUrl(i,concFilecount,true,host,startd,endd)
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else{
@@ -358,6 +358,12 @@ func getDateRange() (string,string){
     fmt.Println("eg: 2017-07-01")
     var enddate string
     fmt.Scanln(&enddate)
+    if(startdate == enddate){
+        //2017-08-28T12:33:27.859Z
+        startdate=fmt.Sprintf("%sT00:00:00.000z",startdate)
+        enddate=fmt.Sprintf("%sT23:59:59.000z",enddate)
+    }
+    //fmt.Println(startdate,enddate)
     return startdate, enddate
 }
 func setCountUrl(daterange bool ,host string,stardate string,enddate string) string {
@@ -413,7 +419,8 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 file, _ := db.GridFS("fs").Open(recods.UniqueId)
                 //checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
-                //fmt.Println(path)
+                updatepath:=("upload"+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/"+recods.UniqueId)
+                //fmt.Println(updatepath)
                 if(file != nil){
                     if _, err := os.Stat(path); os.IsNotExist(err) {
                         os.MkdirAll(path, os.ModePerm)
@@ -421,7 +428,7 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 }
                 
                 if (file != nil) {
-                    out, _ := os.Create(path + "/" + recods.Filename)
+                    out, _ := os.Create(path + "/" + recods.UniqueId)
                     _, err := io.Copy(out, file)
                     _ = file.Close()
                     out.Close()
@@ -431,11 +438,11 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                     
                     //checkErr(err)
                 }
-                if _, err := os.Stat(path + "/" + recods.Filename); !os.IsNotExist(err) {
+                if _, err := os.Stat(path + "/" + recods.UniqueId); !os.IsNotExist(err) {
                    if(confirm){
                        status:= removeFile(db,recods.UniqueId)
                        if(status){
-                        updatePath(path,recods.UniqueId,authToken,tid,cid)
+                        updatePath(updatepath,recods.UniqueId,authToken,tid,cid)
                        }
                    }
                 }
@@ -450,7 +457,7 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
 func removeFile(db mgo.Database,UniqueId string)bool{
     err := db.GridFS("fs").Remove(UniqueId)
     if(err == nil){
-        fmt.Println("File Delete method :",UniqueId)
+        fmt.Println("File Delete  :",UniqueId)
         return true
     }else{
         checkErr(err)
@@ -478,6 +485,6 @@ func updatePath(path string,uniqueid string,authToken string,tid string,cid stri
         body, _ := ioutil.ReadAll(resp.Body)
         rep := Respond{}
         err = json.Unmarshal(body, &rep)
-        fmt.Println(rep.IsSuccess)
+        fmt.Println("path Update in PG : ",rep.IsSuccess)
 
 }
