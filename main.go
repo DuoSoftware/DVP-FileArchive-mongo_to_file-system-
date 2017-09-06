@@ -248,7 +248,7 @@ func main() {
         err = json.Unmarshal(body, &rep)
         fmt.Println("Record Count :" ,rep.Result)  
         for i := 1; i <= ((rep.Result / concFilecount) + 1); i++ {
-            url:=setRecodsUrl(i,concFilecount,false,host,"","")
+            url:=setRecodsUrl(i,concFilecount,true,host,startd,endd)
             fileWrite(rootPath,getRecodes(url,host,authToken,tid,cid,CatjsonStr),authToken,tid,cid,confirm,db)
         }
     }else{
@@ -419,8 +419,8 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 file, _ := db.GridFS("fs").Open(recods.UniqueId)
                 //checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
-                updatepath:=("/usr/local/src/fileservice/upload"+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
-                fmt.Println(updatepath)
+                updatepath:=("upload"+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/"+recods.UniqueId)
+                //fmt.Println(updatepath)
                 if(file != nil){
                     if _, err := os.Stat(path); os.IsNotExist(err) {
                         os.MkdirAll(path, os.ModePerm)
