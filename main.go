@@ -417,8 +417,11 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                 //fmt.Println(recods)
                 // var dataset bson.M
                 file, _ := db.GridFS("fs").Open(recods.UniqueId)
+                Thumbfile, _ := db.GridFS("thumbnails").Open(recods.UniqueId)
                 //checkErr(err)
                 path := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
+                Thumbpath := (rootPath+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_Thumb" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/")
+
                 updatepath:=("upload"+ "/"+"Company_"+strconv.Itoa(recods.CompanyId) + "_Tenant_" + strconv.Itoa(recods.TenantId) + "/" +recods.ObjCategory+"/"+ datepath + "/"+recods.UniqueId)
                 //fmt.Println(updatepath)
                 if(file != nil){
@@ -435,6 +438,7 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                     if(err==nil){
                             migratecount++   
                     }
+
                     
                     //checkErr(err)
                 }
@@ -445,6 +449,45 @@ func fileWrite(rootPath string,rep Respond,authToken string,tid string ,cid stri
                         updatePath(updatepath,recods.UniqueId,authToken,tid,cid)
                        }
                    }
+                }
+                ////////////////////
+                if(Thumbfile != nil){
+                    if _, err := os.Stat(Thumbpath); os.IsNotExist(err) {
+                        os.MkdirAll(Thumbpath, os.ModePerm)
+                    }
+                }
+                
+                if (Thumbfile != nil) {
+                    out, _ := os.Create(Thumbpath + "/" + recods.UniqueId)
+                    _, err := io.Copy(out, Thumbfile)
+                    _ = Thumbfile.Close()
+                    out.Close()
+                    if(err==nil){
+                            migratecount++   
+                    }
+                    
+                    //checkErr(err)
+                }
+                // if _, err := os.Stat(Thumbpath + "/" + recods.UniqueId); !os.IsNotExist(err) {
+                //    if(confirm){
+                //        status:= removeFile(db,recods.UniqueId)
+                //        if(status){
+                //         updatePath(updatepath,recods.UniqueId,authToken,tid,cid)
+                //        }
+                //    }
+                // } 
+                if(file != nil && Thumbfile !=nil){
+                    fmt.Println(recods.UniqueId +" file found from MONGO and moved to : " + path)
+                    fmt.Println(recods.UniqueId +" Thumb file found from MONGO and moved to : " + Thumbpath)
+
+                }else if(file == nil && Thumbfile !=nil){
+                    fmt.Println(recods.UniqueId +" file NOT found from MONGO ")
+                    fmt.Println(recods.UniqueId +" Thumb file found from MONGO and moved to : " + Thumbpath)
+                }else if (file != nil && Thumbfile ==nil){
+                    fmt.Println(recods.UniqueId +" file found from MONGO and moved to : " + path)
+                    fmt.Println(recods.UniqueId +" Thumb file NOT found from MONGO ")
+                }else{
+                    fmt.Println(recods.UniqueId +" Both Original and Thumbnail file NOT found from MONGO ")
                 }
                 //execResponses <- true
             }(recods)
